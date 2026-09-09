@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: SIDAPILKEL Backend API
+  description: Sistem Informasi Data Pemilihan Perbekel Kabupaten Tabanan
+  version: 2.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Development Server
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Healthy
+  /api/v1/auth/login:
+    post:
+      summary: Login pengguna (Admin Pusat / Admin Desa)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: password
+      responses:
+        '200':
+          description: Login berhasil
+        '401':
+          description: Kredensial tidak valid
+        '403':
+          description: Akun dinonaktifkan
+  /api/v1/auth/profile:
+    get:
+      summary: Profil pengguna terautentikasi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profil berhasil diambil
+  /api/v1/auth/logout:
+    post:
+      summary: Logout pengguna
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout berhasil
+  /api/v1/dashboard/stats:
+    get:
+      summary: Statistik agregat dashboard pemilihan
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistik berhasil diambil
+  /api/v1/rekap:
+    get:
+      summary: Rekapitulasi suara (desa / keseluruhan)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: desa_id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Rekapitulasi berhasil diambil
+  /api/v1/rekap/all:
+    get:
+      summary: Rekapitulasi suara seluruh desa (cached)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Rekapitulasi seluruh desa berhasil diambil
+  /api/v1/rekap/{desa_id}:
+    get:
+      summary: Rekapitulasi suara per desa
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: desa_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Rekapitulasi desa berhasil diambil
+  /api/v1/desa:
+    get:
+      summary: List master desa terpaginasi (Admin Pusat)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List data desa
+    post:
+      summary: Tambah master desa (Admin Pusat)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_desa, kecamatan]
+              properties:
+                nama_desa:
+                  type: string
+                kecamatan:
+                  type: string
+      responses:
+        '201':
+          description: Desa berhasil ditambahkan
+  /api/v1/desa/simple:
+    get:
+      summary: Dropdown master desa ringkas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar desa simple
+  /api/v1/calon/desa/{desa_id}:
+    get:
+      summary: Daftar calon perbekel berdasarkan desa
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: desa_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Data calon berhasil diambil
+  /api/v1/calon:
+    post:
+      summary: Tambah calon perbekel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [desa_id, no_urut, nama_calon]
+              properties:
+                desa_id:
+                  type: integer
+                no_urut:
+                  type: integer
+                nama_calon:
+                  type: string
+                asal_banjar:
+                  type: string
+      responses:
+        '201':
+          description: Calon berhasil ditambahkan
+  /api/v1/calon/batch:
+    post:
+      summary: Batch input calon perbekel
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Batch calon berhasil disimpan
+  /api/v1/calon/upload-photo:
+    post:
+      summary: Unggah foto calon
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [foto]
+              properties:
+                foto:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Foto berhasil diunggah
+  /api/v1/tps:
+    get:
+      summary: List TPS terpaginasi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Data TPS terpaginasi
+    post:
+      summary: Tambah TPS dan suara calon
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [desa_id, no_tps, banjar_tps, jml_pml_tetap, suara_tdk_sah, calon_votes]
+              properties:
+                desa_id:
+                  type: integer
+                no_tps:
+                  type: integer
+                banjar_tps:
+                  type: string
+                jml_pml_tetap:
+                  type: integer
+                suara_tdk_sah:
+                  type: integer
+                calon_votes:
+                  type: array
+                  items:
+                    type: object
+                    required: [calon_id, jumlah_suara]
+                    properties:
+                      calon_id:
+                        type: integer
+                      jumlah_suara:
+                        type: integer
+      responses:
+        '201':
+          description: TPS berhasil ditambahkan
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
