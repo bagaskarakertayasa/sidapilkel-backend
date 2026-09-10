@@ -64,24 +64,21 @@ class TPSController extends Controller
 
     public function store(StoreTPSRequest $request): JsonResponse
     {
-        $tps = $this->tpsService->createTPS($request->validated());
+        $validated = $request->validated();
+        
+        $calonCount = \App\Models\Calon::where('desa_id', $validated['desa_id'])->count();
+        if ($calonCount < 2) {
+            return response()->json([
+                'message' => 'Gagal membuat TPS: Minimal harus ada 2 Calon Perbekel di desa ini.'
+            ], 400);
+        }
+
+        $tps = $this->tpsService->createTPS($validated);
 
         return response()->json([
             'message' => 'Data TPS berhasil ditambahkan',
             'data'    => new TPSResource($tps),
         ], 201);
-    }
-
-    public function show(TPS $tps): JsonResponse
-    {
-        $this->authorize('view', $tps);
-
-        $tps->load(['desa', 'calonVotes.calon']);
-
-        return response()->json([
-            'message' => 'Data TPS berhasil diambil',
-            'data'    => new TPSResource($tps),
-        ], 200);
     }
 
     public function update(UpdateTPSRequest $request, TPS $tps): JsonResponse

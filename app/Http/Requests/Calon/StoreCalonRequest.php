@@ -24,7 +24,6 @@ class StoreCalonRequest extends FormRequest
     {
         return [
             'desa_id'     => 'required|exists:desa,id',
-            'no_urut'     => 'required|integer|min:1',
             'nama_calon'  => 'required|string|max:150',
             'foto'        => 'nullable|string|max:255',
             'asal_banjar' => 'nullable|string|max:150',

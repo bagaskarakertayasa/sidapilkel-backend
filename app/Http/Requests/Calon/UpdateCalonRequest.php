@@ -24,7 +24,6 @@ class UpdateCalonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'no_urut'     => 'sometimes|required|integer|min:1',
             'nama_calon'  => 'sometimes|required|string|max:150',
             'foto'        => 'nullable|string|max:255',
             'asal_banjar' => 'nullable|string|max:150',

@@ -43,22 +43,17 @@ class CalonController extends Controller
 
     public function store(StoreCalonRequest $request): JsonResponse
     {
-        $calon = Calon::create($request->validated());
+        $validated = $request->validated();
+        
+        $maxNoUrut = Calon::where('desa_id', $validated['desa_id'])->max('no_urut') ?? 0;
+        $validated['no_urut'] = $maxNoUrut + 1;
+        
+        $calon = Calon::create($validated);
 
         return response()->json([
             'message' => 'Data calon berhasil ditambahkan',
             'data'    => new CalonResource($calon->load('desa')),
         ], 201);
-    }
-
-    public function show(Calon $calon): JsonResponse
-    {
-        $this->authorize('view', $calon);
-
-        return response()->json([
-            'message' => 'Data calon berhasil diambil',
-            'data'    => new CalonResource($calon->load('desa')),
-        ], 200);
     }
 
     public function update(UpdateCalonRequest $request, Calon $calon): JsonResponse
@@ -77,34 +72,15 @@ class CalonController extends Controller
     {
         $this->authorize('delete', $calon);
 
+        if ($calon->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($calon->foto)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($calon->foto);
+        }
+
         $calon->delete();
 
         return response()->json([
             'message' => 'Data calon berhasil dihapus',
         ], 200);
-    }
-
-    /**
-     * Batch store candidates for a village.
-     */
-    public function batchStore(BatchCalonRequest $request): JsonResponse
-    {
-        $desaId = $request->desa_id;
-        $items = $request->calon;
-
-        $created = DB::transaction(function () use ($desaId, $items) {
-            $result = [];
-            foreach ($items as $item) {
-                $item['desa_id'] = $desaId;
-                $result[] = Calon::create($item);
-            }
-            return $result;
-        });
-
-        return response()->json([
-            'message' => 'Batch data calon berhasil disimpan',
-            'data'    => CalonResource::collection(collect($created)->load('desa')),
-        ], 201);
     }
 
     /**
@@ -138,10 +114,19 @@ class CalonController extends Controller
             ], 403);
         }
 
+        \App\Models\TPS::where('desa_id', $desa_id)->delete();
+        
+        $calons = Calon::where('desa_id', $desa_id)->get();
+        foreach ($calons as $calon) {
+            if ($calon->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($calon->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($calon->foto);
+            }
+        }
+        
         Calon::where('desa_id', $desa_id)->delete();
 
         return response()->json([
-            'message' => 'Data calon untuk desa tersebut berhasil direset',
+            'message' => 'Data calon dan TPS untuk desa tersebut berhasil direset',
         ], 200);
     }
 }

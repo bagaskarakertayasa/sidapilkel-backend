@@ -37,6 +37,6 @@ class CalonPolicy
 
     public function delete(User $user, Calon $calon): bool
     {
-        return (string) $user->desa_id === (string) $calon->desa_id;
+        return false;
     }
 }
