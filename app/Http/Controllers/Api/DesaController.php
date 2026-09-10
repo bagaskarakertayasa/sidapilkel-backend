@@ -82,18 +82,10 @@ class DesaController extends Controller
         ], 201);
     }
 
-    public function show(Desa $desa): JsonResponse
-    {
-        $this->authorize('view', $desa);
-
-        return response()->json([
-            'message' => 'Data desa berhasil diambil',
-            'data'    => new DesaResource($desa),
-        ], 200);
-    }
-
     public function update(UpdateDesaRequest $request, Desa $desa): JsonResponse
     {
+        $this->authorize('update', $desa);
+
         $desa->update($request->validated());
 
         return response()->json([

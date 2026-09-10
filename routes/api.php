@@ -16,7 +16,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,5');
 
     // 2. Endpoint Terproteksi (JWT Auth + Active Status)
-    Route::middleware(['jwt.auth', 'account.active'])->group(function () {
+    Route::middleware(['jwt.auth', 'account.active', 'throttle:60,1'])->group(function () {
         // Autentikasi User
         Route::get('/auth/profile', [AuthController::class, 'profile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -33,19 +33,18 @@ Route::prefix('v1')->group(function () {
         // Calon Custom Actions
         Route::get('/calon/desa/{desa_id}', [CalonController::class, 'byDesa']);
         Route::post('/calon/upload-photo', [CalonController::class, 'uploadPhoto']);
-        Route::post('/calon/batch', [CalonController::class, 'batchStore']);
         Route::delete('/calon/reset/{desa_id}', [CalonController::class, 'resetByDesa']);
 
         // TPS Custom Actions
         Route::get('/tps/desa/{desa_id}', [TPSController::class, 'byDesa']);
 
         // Resourceful CRUD (Best Practice #1)
-        Route::apiResource('users', UserController::class);
+        Route::apiResource('users', UserController::class)->except(['show']);
         Route::patch('/users/{id}/password', [UserController::class, 'updatePassword']);
         Route::patch('/users/{id}/status', [UserController::class, 'toggleStatus']);
 
-        Route::apiResource('desa', DesaController::class);
-        Route::apiResource('calon', CalonController::class)->except(['index']);
-        Route::apiResource('tps', TPSController::class)->parameters(['tps' => 'tps']);
+        Route::apiResource('desa', DesaController::class)->except(['show']);
+        Route::apiResource('calon', CalonController::class)->except(['index', 'show']);
+        Route::apiResource('tps', TPSController::class)->parameters(['tps' => 'tps'])->except(['show']);
     });
 });

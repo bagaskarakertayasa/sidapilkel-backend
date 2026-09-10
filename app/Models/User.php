@@ -8,15 +8,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
     public $incrementing = false;
     protected $keyType = 'string';
 
+    /**
+     * SECURITY NOTE: 'role' and 'status' are in $fillable because admin-only
+     * controllers need mass-assignment. All write endpoints enforce ADMIN_PUSAT
+     * authorization via FormRequest->authorize(). If adding new endpoints that
+     * accept user input and call create()/update(), ensure authorization is checked.
+     */
     protected $fillable = [
         'nama_depan',
         'nama_belakang',

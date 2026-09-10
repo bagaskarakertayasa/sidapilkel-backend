@@ -64,16 +64,6 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function show(User $user): JsonResponse
-    {
-        $this->authorize('view', $user);
-
-        return response()->json([
-            'message' => 'Data pengguna berhasil diambil',
-            'data'    => new UserResource($user->load('desa')),
-        ], 200);
-    }
-
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);
