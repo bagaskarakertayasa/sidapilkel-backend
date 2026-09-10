@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class JwtService
 {
@@ -16,7 +16,10 @@ class JwtService
         if (str_starts_with($key, 'base64:')) {
             $key = base64_decode(substr($key, 7));
         }
-        $this->secret = $key ?: 'sidapilkel-default-secret-key-32-chars!!';
+        if (empty($key)) {
+            throw new \RuntimeException('APP_KEY harus di-set. Jalankan: php artisan key:generate');
+        }
+        $this->secret = $key;
         $this->issuer = (string) config('app.url', 'sidapilkel');
     }
 
@@ -33,14 +36,11 @@ class JwtService
 
         $now = time();
         $payload = [
-            'iss'      => $this->issuer,
-            'sub'      => (string) $user->id,
-            'username' => $user->username,
-            'role'     => $user->role,
-            'desa_id'  => $user->desa_id,
-            'iat'      => $now,
-            'exp'      => $now + $ttl,
-            'jti'      => bin2hex(random_bytes(16)),
+            'iss' => $this->issuer,
+            'sub' => (string) $user->id,
+            'iat' => $now,
+            'exp' => $now + $ttl,
+            'jti' => bin2hex(random_bytes(16)),
         ];
 
         $headerEncoded = $this->base64UrlEncode(json_encode($header, JSON_UNESCAPED_SLASHES));
@@ -86,8 +86,8 @@ class JwtService
             return null;
         }
 
-        // Check revocation
-        if (!empty($payload['jti']) && Cache::has("jwt:revoked:{$payload['jti']}")) {
+        // Check revocation (persistent DB-based blacklist)
+        if (!empty($payload['jti']) && DB::table('revoked_tokens')->where('jti', $payload['jti'])->exists()) {
             return null;
         }
 
@@ -108,7 +108,7 @@ class JwtService
     }
 
     /**
-     * Revoke a token by adding its jti to the blacklist cache until its expiration.
+     * Revoke a token by inserting its jti into the persistent revoked_tokens table.
      */
     public function revokeToken(string $token): bool
     {
@@ -123,11 +123,22 @@ class JwtService
         }
 
         $exp = $payload['exp'] ?? (time() + 604800);
-        $ttlSeconds = max(1, $exp - time());
 
-        Cache::put("jwt:revoked:{$payload['jti']}", true, $ttlSeconds);
+        DB::table('revoked_tokens')->insertOrIgnore([
+            'jti'        => $payload['jti'],
+            'expires_at' => date('Y-m-d H:i:s', $exp),
+            'created_at' => now(),
+        ]);
 
         return true;
+    }
+
+    /**
+     * Cleanup expired revoked tokens (call via scheduler or artisan command).
+     */
+    public function cleanupExpiredTokens(): int
+    {
+        return DB::table('revoked_tokens')->where('expires_at', '<', now())->delete();
     }
 
     private function base64UrlEncode(string $data): string

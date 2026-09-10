@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
+use Illuminate\Support\Str;
+
 class UserSeeder extends Seeder
 {
     /**
@@ -22,13 +24,19 @@ class UserSeeder extends Seeder
         User::query()->forceDelete();
         Schema::enableForeignKeyConstraints();
 
-        // 2. Seed Admin Pusat (kredensial: admin / admin123)
+        // 2. Seed Admin Pusat
+        $adminPassword = env('ADMIN_DEFAULT_PASSWORD', Str::random(16));
+        $desaPassword  = env('DESA_DEFAULT_PASSWORD', Str::random(16));
+
+        $this->command->info("Admin Pusat password: {$adminPassword}");
+        $this->command->info("Admin Desa  password: {$desaPassword}");
+
         User::create([
             'nama_depan'    => 'Admin',
             'nama_belakang' => 'Pusat',
             'username'      => 'admin',
             'email'         => 'admin@tabanan.go.id',
-            'password'      => Hash::make('admin123'),
+            'password'      => Hash::make($adminPassword),
             'role'          => 'ADMIN_PUSAT',
             'status'        => 'aktif',
             'desa_id'       => null,
@@ -52,7 +60,7 @@ class UserSeeder extends Seeder
                 'nama_belakang' => 'Desa ' . $desa->nama_desa,
                 'username'      => $slugUsername,
                 'email'         => $slugUsername . '@tabanan.go.id',
-                'password'      => Hash::make('password123'),
+                'password'      => Hash::make($desaPassword),
                 'role'          => 'ADMIN_DESA',
                 'status'        => 'aktif',
                 'desa_id'       => $desa->id,
@@ -66,7 +74,7 @@ class UserSeeder extends Seeder
                 'nama_belakang' => 'Desa 1',
                 'username'      => 'admindesa1',
                 'email'         => 'admindesa1@tabanan.go.id',
-                'password'      => Hash::make('password123'),
+                'password'      => Hash::make($desaPassword),
                 'role'          => 'ADMIN_DESA',
                 'status'        => 'aktif',
                 'desa_id'       => $desas->first()->id,

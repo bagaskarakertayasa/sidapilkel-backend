@@ -40,15 +40,26 @@ class AuthController extends Controller
         $jwtService = app(\App\Services\JwtService::class);
         $token = $jwtService->generateToken($user);
 
+        $cookieMinutes = (int) ceil(604800 / 60); // 1 week in minutes
+        $tokenCookie = cookie(
+            'sidapilkel_token',
+            $token,
+            $cookieMinutes,
+            '/',
+            null,
+            $request->isSecure(),
+            true,   // HttpOnly — JavaScript cannot read this cookie
+            false,
+            'Lax'
+        );
+
         return response()->json([
             'message' => 'Login berhasil',
             'data'    => [
-                'token'      => $token,
-                'token_type' => 'Bearer',
-                'expires_in' => 604800, // 1 minggu (7 hari dalam detik)
+                'expires_in' => 604800,
                 'user'       => new UserResource($user->load('desa')),
             ],
-        ], 200);
+        ], 200)->withCookie($tokenCookie);
     }
 
     /**
@@ -67,16 +78,17 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->bearerToken();
+        $token = $request->bearerToken() ?? $request->cookie('sidapilkel_token');
         if ($token) {
             app(\App\Services\JwtService::class)->revokeToken($token);
         }
 
-        $request->user()?->currentAccessToken()?->delete();
         \Illuminate\Support\Facades\Auth::forgetGuards();
+
+        $clearCookie = cookie()->forget('sidapilkel_token');
 
         return response()->json([
             'message' => 'Logout berhasil',
-        ], 200);
+        ], 200)->withCookie($clearCookie);
     }
 }

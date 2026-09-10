@@ -8,7 +8,7 @@ class UploadPhotoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('upload-photo') ?? false;
+        return $this->user()?->isAktif() ?? false;
     }
 
     public function rules(): array

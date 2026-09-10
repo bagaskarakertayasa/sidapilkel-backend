@@ -15,7 +15,7 @@ class JwtAuthenticate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
+        $token = $request->bearerToken() ?? $request->cookie('sidapilkel_token');
 
         // If no token is provided, check if user is already authenticated (e.g. via actingAs in tests)
         if (!$token) {
